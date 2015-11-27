@@ -6,16 +6,16 @@ import numpy
 #-----------------------------------------------------------------------------#
 # Specify dataset(s) location here
 #-----------------------------------------------------------------------------#
-path_to_data = '/ais/gobi3/u/rkiros/uvsdata/'
+path_to_data = 'datasets/'
 #-----------------------------------------------------------------------------#
 
 def load_dataset(name='f8k', load_train=True):
     """
     Load captions and image features
-    Possible options: f8k, f30k, coco
+    Possible options: f8k, f30k, coco, 'abstract-fc7', 'abstract-presence'
     """
     loc = path_to_data + name + '/'
-    
+
     # Captions
     train_caps, dev_caps, test_caps = [],[],[]
     if load_train:
@@ -30,7 +30,7 @@ def load_dataset(name='f8k', load_train=True):
     with open(loc+name+'_test_caps.txt', 'rb') as f:
         for line in f:
             test_caps.append(line.strip())
-            
+
     # Image features
     if load_train:
         train_ims = numpy.load(loc+name+'_train_ims.npy')

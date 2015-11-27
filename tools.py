@@ -17,7 +17,7 @@ from model import init_params, build_sentence_encoder, build_image_encoder
 #-----------------------------------------------------------------------------#
 # Specify model location here
 #-----------------------------------------------------------------------------#
-default_model = '/ais/gobi3/u/rkiros/uvsmodels/coco.npz'
+default_model = 'vse/f30k.npz'
 #-----------------------------------------------------------------------------#
 
 def load_model(path_to_model=default_model):
@@ -104,7 +104,7 @@ def encode_sentences(model, X, verbose=False, batch_size=128):
             for idx, s in enumerate(seqs):
                 x[:k,idx] = s
                 x_mask[:k+1,idx] = 1.
-            
+
             ff = model['f_senc'](x, x_mask)
             for ind, c in enumerate(caps):
                 features[c] = ff[ind]

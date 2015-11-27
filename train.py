@@ -12,6 +12,7 @@ import os
 import warnings
 import sys
 import time
+import argparse
 
 import homogeneous_data
 
@@ -27,7 +28,7 @@ from tools import encode_sentences, encode_images
 from datasets import load_dataset
 
 # main trainer
-def trainer(data='coco',  #f8k, f30k, coco
+def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
             margin=0.2,
             dim=1024,
             dim_image=4096,
@@ -40,7 +41,7 @@ def trainer(data='coco',  #f8k, f30k, coco
             maxlen_w=100,
             optimizer='adam',
             batch_size = 128,
-            saveto='/ais/gobi3/u/rkiros/uvsmodels/coco.npz',
+            saveto='vse/abstract-fc7.npz',
             validFreq=100,
             lrate=0.0002,
             reload_=False):
@@ -159,7 +160,7 @@ def trainer(data='coco',  #f8k, f30k, coco
     uidx = 0
     curr = 0.
     n_samples = 0
-    
+
     for eidx in xrange(max_epochs):
 
         print 'Epoch ', eidx
@@ -220,5 +221,12 @@ def trainer(data='coco',  #f8k, f30k, coco
         print 'Seen %d samples'%n_samples
 
 if __name__ == '__main__':
-    pass
+    parser = argparse.ArgumentParser(description='Training code for visual semantic embedding models')
+    parser.add_argument('--data', default='abstract-fc7', help='Which kind of features from ./datasets do you want to use?')
+    parser.add_argument('--im_dim', type=int, default=4096, help='Dimensionality of image features')
 
+    args = parser.parse_args()
+
+    model = os.path.join('vse', args.data + '.npz')
+    trainer(data=args.data, dim_image=args.im_dim, saveto=model)
+    print "Done"

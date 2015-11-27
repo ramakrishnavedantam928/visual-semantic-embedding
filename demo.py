@@ -24,8 +24,64 @@ import tools
 #-----------------------------------------------------------------------------#
 # Specify VGG-19 convnet location here
 #-----------------------------------------------------------------------------#
-path_to_vgg = '/ais/gobi3/u/rkiros/vgg/vgg19.pkl'
+path_to_vgg = 'models/vgg19.pkl'
 #-----------------------------------------------------------------------------#
+
+# compute image features from the demo utility
+def get_image_features(net, file_name):
+    """
+    Load Abstract Images
+    """
+    def load_abstract_image(file_name):
+        """
+        Load and preprocess an image
+        """
+        # TODO: should we use the mean value from abstract scenes here?
+        # mean value used by the code by default
+        # MEAN_VALUE = numpy.array([103.939, 116.779, 123.68]).reshape((3,1,1))
+        # mean value for clipart (BGR)
+        MEAN_VALUE = numpy.array([112.39, 152.83, 144.70]).reshape((3,1,1))
+        image = Image.open(file_name)
+        # set alpha channel to empty
+        im = numpy.array(image)
+        if im.shape[2] == 4:
+            im = im[:, :, range(3)]
+        # Resize so smallest dim = 256, preserving aspect ratio
+        if len(im.shape) == 2:
+            im = im[:, :, numpy.newaxis]
+            im = numpy.repeat(im, 3, axis=2)
+        h, w, _ = im.shape
+        if h < w:
+            im = skimage.transform.resize(im, (256, w*256/h), preserve_range=True)
+        else:
+            im = skimage.transform.resize(im, (h*256/w, 256), preserve_range=True)
+
+        # Central crop to 224x224
+        h, w, _ = im.shape
+        im = im[h//2-112:h//2+112, w//2-112:w//2+112]
+
+        rawim = numpy.copy(im).astype('uint8')
+
+        # Shuffle axes to c01
+        im = numpy.swapaxes(numpy.swapaxes(im, 1, 2), 0, 1)
+
+        # Convert to BGR
+        im = im[::-1, :, :]
+
+        im = im - MEAN_VALUE
+        return floatX(im[numpy.newaxis])
+
+
+    # Load the image
+    im = load_abstract_image(file_name)
+
+    # Run image through convnet
+    feats = compute_features(net, im).flatten()
+
+    # Normalize the features
+    feats /= norm(feats)
+
+    return feats
 
 def retrieve_captions(model, net, captions, cvecs, file_name, k=5):
     """
@@ -110,7 +166,7 @@ def regularities(model, net, captions, imvecs, file_name, negword, posword, k=5,
         sentences = [sentences[a] for a in sargs[:k]]
         sorted_args = [sorted_args[a] for a in sargs[:k]]
 
-    return sentences, sorted_args[:k]    
+    return sentences, sorted_args[:k]
 
 def compute_fromfile(net, loc, base_path='/ais/gobi3/u/rkiros/coco/images/val2014/'):
     """
@@ -134,9 +190,9 @@ def compute_fromfile(net, loc, base_path='/ais/gobi3/u/rkiros/coco/images/val201
             ims[j] = load_image(batch[j])
         fc7 = compute_features(net, ims)
         feats[idx] = fc7
-         
+
     return feats
-    
+
 def load_image(file_name):
     """
     Load and preprocess an image
@@ -158,12 +214,12 @@ def load_image(file_name):
     # Central crop to 224x224
     h, w, _ = im.shape
     im = im[h//2-112:h//2+112, w//2-112:w//2+112]
-    
+
     rawim = numpy.copy(im).astype('uint8')
-    
+
     # Shuffle axes to c01
     im = numpy.swapaxes(numpy.swapaxes(im, 1, 2), 0, 1)
-    
+
     # Convert to BGR
     im = im[::-1, :, :]
 
