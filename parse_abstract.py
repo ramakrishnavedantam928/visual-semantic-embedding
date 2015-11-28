@@ -82,7 +82,8 @@ def get_image_feat(feat_type, image_folder, orig_split, indices):
         net = demo.build_convnet()
         print "Extracting Features"
         for item in tqdm(indices):
-            feats[item] = demo.get_image_features(net, os.path.join(folder, imname(prefix, item)))
+            feats[item] = demo.get_image_features(net,
+                                            os.path.join(folder, imname(prefix, item)))
     else:
         folder = os.path.join(image_folder, 'scene_json', 'scene_%s2015_indv' % (orig_split))
 
@@ -113,40 +114,37 @@ def get_image_feat(feat_type, image_folder, orig_split, indices):
 
             feats[item] = cur_feats
 
-        return feats
+    return feats
 
-def write_vse_input(outfile, captions, feats, splits):
+def write_vse_input(outfile, captions, feats, sp):
     """
     outfile: str (Path to directory where data is to be written, in datasets/)
     captions: dict of dict of list (captions for train, dev and test splits)
     feats: dict of dict of np.array (features for train, dev and test images)
     """
+    caption_fname = open(os.path.join('/ssd_local/rama/datasets', outfile, outfile + '_' + sp + '_caps.txt'), 'w')
+    im_fname = os.path.join('/ssd_local/rama/datasets', outfile, outfile + '_' + sp + '_ims.npy')
 
+    cap_key = sp + '_captions'
+    feat_key = sp + '_feats'
+    # image list file
+    image_features = np.float32(np.zeros([len(feats[feat_key].keys())*len(captions[cap_key].values()[0])
+                                                                        , len(feats[feat_key].values()[0])]))
 
-    for sp in splits:
-        caption_fname = open(os.path.join('datasets', outfile, outfile + '_' + sp + '_caps.txt'), 'w')
-        im_fname = os.path.join('datasets', outfile, outfile + '_' + sp + '_ims.npy')
+    fptr = 0
+    for key in captions[cap_key]:
+        for item in captions[cap_key][key]:
+            asc_item = item.encode('ascii', 'replace')
+            if asc_item != item:
+                asc_item = asc_item.replace('?', ' ')
+            caption_fname.write(asc_item + '\n')
+            image_features[fptr, :] = np.float32(feats[feat_key][key])
+            fptr += 1
 
-        cap_key = sp + '_captions'
-        feat_key = sp + '_feats'
-        # image list file
-        im_list_fname = os.path.join('datasets', outfile, outfile + '_' + sp + '.txt')
-        image_features = np.float32(np.zeros([len(feats[feat_key].keys())*len(captions[cap_key].values()[0])
-                                                                           , len(feats[feat_key].values()[0])]))
-
-        fptr = 0
-        for key in captions[cap_key]:
-            for item in captions[cap_key][key]:
-                asc_item = item.encode('ascii', 'replace')
-                if asc_item != item:
-                    asc_item = asc_item.replace('?', ' ')
-                caption_fname.write(asc_item + '\n')
-                image_features[fptr] = np.float32(feats[feat_key][key])
-                fptr += 1
-
-        assert (fptr == image_features.shape[0])
-        np.save(im_fname, image_features)
-        caption_fname.close()
+    assert (fptr == image_features.shape[0])
+    np.save(im_fname, image_features)
+    del(image_features)
+    caption_fname.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Create dataset to give as input the Visual Semantic Embedding (VSE)')
@@ -161,20 +159,24 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     out_dir = 'abstract-' + args.imfeat
-    chk_dir= os.path.join('datasets', out_dir)
+    chk_dir= os.path.join('/ssd_local/rama/datasets', out_dir)
     # Check if output directory needs to be created
     if not os.path.exists(chk_dir):
         os.mkdir(chk_dir)
 
     #
-    imfeat = args.imfeat.split('-')
+    if args.imfeat != 'all':
+        imfeat = args.imfeat.split('-')
+    else:
+        imfeat = ['instance-level', 'category-general']
     # setup
     random.seed(args.seed)
     feats = {}
     captions = {}
     # parse the sentences in train and val sets of abstract scenes respectively
     train_path = os.path.join(args.caption_dir, 'captions_abstract_v002_train2015.json')
-    val_path = os.path.join(args.caption_dir, 'captions_abstract_v002_val2015.json')
+    val_path = os.path.join(args.caption_dir,
+                            'captions_abstract_v002_val2015.json')
 
     captions['train_captions'] = parse_captions(train_path)
     val_captions = parse_captions(val_path)
@@ -187,18 +189,25 @@ if __name__ == "__main__":
     # slit half into test and half into dev
     all_splits['dev_split'] = set(val_keys[0:len(val_keys)/2])
     all_splits['test_split'] = set(val_keys[len(val_keys)/2:-1])
-    assert(len(all_splits['dev_split'].intersection(all_splits['test_split'])) == 0)
+    assert(len(all_splits['dev_split'].intersection(
+        all_splits['test_split'])) == 0)
 
     # for testing - use just one element of splits
     # all_splits['train_split'] = set([list(all_splits['train_split'])[0]])
     # all_splits['dev_split'] = set([list(all_splits['dev_split'])[0]])
     # all_splits['test_split'] = set([list(all_splits['test_split'])[0]])
 
-    captions['dev_captions'] = {k: v for k, v in val_captions.iteritems() if k in all_splits['dev_split']}
-    captions['test_captions'] = {k: v for k, v in val_captions.iteritems() if k in all_splits['test_split']}
-    captions['train_captions'] = {k: v for k, v in captions['train_captions'].iteritems() if k in all_splits['train_split']}
+    captions['dev_captions'] = {k: v for k, v in val_captions.iteritems()\
+                                if k in all_splits['dev_split']}
+    captions['test_captions'] = {k: v for k, v in val_captions.iteritems()
+                                 if k in all_splits['test_split']}
+    captions['train_captions'] = {k: v for k, v in
+                                  captions['train_captions'].iteritems()
+                                  if k in all_splits['train_split']}
 
-    # feats.p stores the vgg 19 features
+    # feats.p stores the vgg 19 features w/o mean correction
+    # with open('feats.p', 'r') as readfile:
+    #    feats = pickle.load(readfile)
 
     splits = args.splits.split('-')
     # decide what image features to extract
@@ -210,9 +219,9 @@ if __name__ == "__main__":
             orig_split = 'val'
         else:
             orig_split = 'train'
-        feats['{}_feats'.format(sp)] = get_image_feat(imfeat, args.imdir, orig_split, all_splits['{}_split'.format(sp)])
-        pickle.dump(feats, open('feats-abs-mean-{}.p'.format(sp), 'w'))
+        feats['{}_feats'.format(sp)] = get_image_feat(imfeat, args.imdir,
+                                            orig_split,
+                                            all_splits['{}_split'.format(sp)])
         print "Writing the caption and image files"
         # put the captions and images in to text files and npy files respectively
-        write_vse_input(out_dir, captions, feats, [sp])
-
+        write_vse_input(out_dir, captions, feats, sp)
