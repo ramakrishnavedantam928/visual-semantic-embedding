@@ -11,6 +11,7 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from utils import _p, ortho_weight, norm_weight, xavier_weight, tanh, l2norm
 from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_layer
+from cnn import build_convnet
 
 def init_params(options):
     """
@@ -29,6 +30,8 @@ def init_params(options):
     # Image encoder
     # TODO: Change this call for image fintetuning
     params = get_layer('ff')[0](options, params, prefix='ff_image', nin=options['dim_image'], nout=options['dim'])
+    # Parameters for the CNN are initialized automatically by lasagne
+    # So just get the trainable parameters here
 
     return params
 

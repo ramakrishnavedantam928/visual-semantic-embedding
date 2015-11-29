@@ -4,15 +4,17 @@ Layers for multimodal-ranking
 import theano
 import theano.tensor as tensor
 import demo
+import lasagne
 
 import numpy
 
 from utils import _p, ortho_weight, norm_weight, xavier_weight, tanh, linear
+from cnn import build_convnet
 
 # layers: 'name': ('parameter initializer', 'feedforward')
 layers = {'ff': ('param_init_fflayer', 'fflayer'),
           'gru': ('param_init_gru', 'gru_layer'),
-          'convff': ('param_init_convff', 'convff_layer'),
+          'cnn': ('param_init_cnn', 'cnn_layer'),
           }
 
 def get_layer(name):
@@ -43,13 +45,23 @@ def fflayer(tparams, state_below, options, prefix='rconv', activ='lambda x: tens
     """
     return eval(activ)(tensor.dot(state_below, tparams[_p(prefix,'W')])+tparams[_p(prefix,'b')])
 
-def param_init_convff():#TODO: Add arguments to function
+def param_init_cnn(options, params):
+    for
     pass
 
 # convolutional layers as part of model definition
-def convff_layer(options, prefix='conv'):
-    net = demo.build_convnet()
-    out = net['fc7'].
+def cnn_layer(options, image, test=False):
+    """
+    Declare a CNN function and return a function for it
+
+    :params: options (dict): list of options for training
+            image (theano.tensor): input image to the cnn
+            test (bool): determine if dropout is to be used or not
+
+    :returns: theano.tensor: computes the symbolic expression for the cnn output
+    """
+    net =  build_convnet(options['cnn'])
+    return lasagne.layers.get_layer_output(net['fc7'], image, deterministic=test)
 
 # GRU layer
 def param_init_gru(options, params, prefix='gru', nin=None, dim=None):

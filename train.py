@@ -44,6 +44,7 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
             saveto='vse/abstract-fc7.npz',
             validFreq=100,
             lrate=0.0002,
+            cnn = 'vgg19',
             reload_=False):
 
     # Model options
@@ -65,6 +66,8 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     model_options['validFreq'] = validFreq
     model_options['lrate'] = lrate
     model_options['reload_'] = reload_
+    # DONE: Added new option
+    model_options['cnn'] = cnn
 
     print model_options
 
@@ -77,7 +80,7 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     # Load training and development sets
     print 'Loading dataset'
     # NOTE: New image features would be num_images x num_channels x h x w
-    # TODO: make change in datasets / load_dataset function
+    # DONE: make change in datasets / load_dataset function
     train, dev = load_dataset(data)[:2]
 
     # Create and save dictionary
