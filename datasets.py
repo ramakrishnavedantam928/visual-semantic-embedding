@@ -43,17 +43,17 @@ def load_dataset(name='abstract-fc7', load_train=True):
     if load_train:
         # Read train images
         dset = h5py.File('/ssd_local/rama/datasets/abstract-hdf5/{}.h5'.format('train'), 'r')['images']
-        train_ims = np.zeros(dset.shape, dtype='np.float32')
+        train_ims = np.zeros(dset.shape, dtype=np.float32)
         dset.read_direct(train_ims)
     else:
         train_ims = None
     # Read dev images
     dset = h5py.File('/ssd_local/rama/datasets/abstract-hdf5/{}.h5'.format('dev'), 'r')['images']
-    dev_ims = np.zeros(dset.shape, dtype='np.float32')
+    dev_ims = np.zeros(dset.shape, dtype=np.float32)
     dset.read_direct(dev_ims)
     # Read test images
     dset = h5py.File('/ssd_local/rama/datasets/abstract-hdf5/{}.h5'.format('test'), 'r')['images']
-    test_ims = np.zeros(dset.shape, dtype='np.float32')
+    test_ims = np.zeros(dset.shape, dtype=np.float32)
     dset.read_direct(test_ims)
 
     return (train_caps, train_ims), (dev_caps, dev_ims), (test_caps, test_ims)
