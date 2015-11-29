@@ -26,62 +26,82 @@ import tools
 #-----------------------------------------------------------------------------#
 path_to_vgg = 'models/vgg19.pkl'
 #-----------------------------------------------------------------------------#
-
-# compute image features from the demo utility
-def get_image_features(net, file_name):
+def load_abstract_image(file_name, type='theano'):
     """
-    Load Abstract Images
+    Load and preprocess an abstract scenes image
     """
-    def load_abstract_image(file_name):
-        """
-        Load and preprocess an image
-        """
-        # TODO: should we use the mean value from abstract scenes here?
-        # mean value used by the code by default
-        # MEAN_VALUE = numpy.array([103.939, 116.779, 123.68]).reshape((3,1,1))
-        # mean value for clipart (BGR)
-        MEAN_VALUE = numpy.array([112.39, 152.83, 144.70]).reshape((3,1,1))
-        image = Image.open(file_name)
-        # set alpha channel to empty
-        im = numpy.array(image)
-        if im.shape[2] == 4:
-            im = im[:, :, range(3)]
-        # Resize so smallest dim = 256, preserving aspect ratio
-        if len(im.shape) == 2:
-            im = im[:, :, numpy.newaxis]
-            im = numpy.repeat(im, 3, axis=2)
-        h, w, _ = im.shape
-        if h < w:
-            im = skimage.transform.resize(im, (256, w*256/h), preserve_range=True)
-        else:
-            im = skimage.transform.resize(im, (h*256/w, 256), preserve_range=True)
+    # TODO: should we use the mean value from abstract scenes here?
+    # mean value used by the code by default
+    MEAN_VALUE = numpy.array([103.939, 116.779, 123.68]).reshape((3,1,1))
+    # mean value for clipart (BGR)
+    # MEAN_VALUE = numpy.array([112.39, 152.83, 144.70]).reshape((3,1,1))
+    image = Image.open(file_name)
+    # set alpha channel to empty
+    im = numpy.array(image).astype(numpy.float32)
+    if im.shape[2] == 4:
+        im = im[:, :, range(3)]
+    # Resize so smallest dim = 256, preserving aspect ratio
+    if len(im.shape) == 2:
+        im = im[:, :, numpy.newaxis]
+        im = numpy.repeat(im, 3, axis=2)
+    h, w, _ = im.shape
+    if h < w:
+        im = skimage.transform.resize(im, (256, w*256/h), preserve_range=True)
+    else:
+        im = skimage.transform.resize(im, (h*256/w, 256), preserve_range=True)
 
-        # Central crop to 224x224
-        h, w, _ = im.shape
-        im = im[h//2-112:h//2+112, w//2-112:w//2+112]
+    # Central crop to 224x224
+    h, w, _ = im.shape
+    im = im[h//2-112:h//2+112, w//2-112:w//2+112]
 
-        rawim = numpy.copy(im).astype('uint8')
+    rawim = numpy.copy(im).astype('uint8')
 
-        # Shuffle axes to c01
-        im = numpy.swapaxes(numpy.swapaxes(im, 1, 2), 0, 1)
+    # Shuffle axes to c01
+    im = numpy.swapaxes(numpy.swapaxes(im, 1, 2), 0, 1)
 
-        # Convert to BGR
-        im = im[::-1, :, :]
+    # Convert to BGR
+    im = im[::-1, :, :]
 
-        im = im - MEAN_VALUE
+    im = im - MEAN_VALUE
+    if type is not 'theano':
+        return im
+    else:
         return floatX(im[numpy.newaxis])
 
+def load_image(file_name):
+    """
+    Load and preprocess an image
+    """
+    MEAN_VALUE = numpy.array([103.939, 116.779, 123.68]).reshape((3,1,1))
+    image = Image.open(file_name)
+    im = numpy.array(image)
 
-    # Load the image
-    im = load_abstract_image(file_name)
+    # Resize so smallest dim = 256, preserving aspect ratio
+    if len(im.shape) == 2:
+        im = im[:, :, numpy.newaxis]
+        im = numpy.repeat(im, 3, axis=2)
+    h, w, _ = im.shape
+    if h < w:
+        im = skimage.transform.resize(im, (256, w*256/h), preserve_range=True)
+    else:
+        im = skimage.transform.resize(im, (h*256/w, 256), preserve_range=True)
 
-    # Run image through convnet
-    feats = compute_features(net, im).flatten()
+    # Central crop to 224x224
+    h, w, _ = im.shape
+    im = im[h//2-112:h//2+112, w//2-112:w//2+112]
 
-    # Normalize the features
-    feats /= norm(feats)
+    rawim = numpy.copy(im).astype('uint8')
 
-    return feats
+    # Shuffle axes to c01
+    im = numpy.swapaxes(numpy.swapaxes(im, 1, 2), 0, 1)
+
+    # Convert to BGR
+    im = im[::-1, :, :]
+
+    im = im - MEAN_VALUE
+    return floatX(im[numpy.newaxis])
+
+
 
 def retrieve_captions(model, net, captions, cvecs, file_name, k=5):
     """
@@ -170,7 +190,7 @@ def regularities(model, net, captions, imvecs, file_name, negword, posword, k=5,
 
 def compute_fromfile(net, loc, base_path='/ais/gobi3/u/rkiros/coco/images/val2014/'):
     """
-    Compute image features from a text file of locations
+    Compute image features from a text file of abstract scene locations
     """
     batchsize = 128
     imagelist = []
@@ -179,7 +199,7 @@ def compute_fromfile(net, loc, base_path='/ais/gobi3/u/rkiros/coco/images/val201
             imagelist.append(base_path + line.strip())
     inds = numpy.arange(len(imagelist))
     numbatches = len(inds) / batchsize + 1
-    feats = numpy.zeros((len(imagelist), 4096), dtype='float32')
+    feats = {}
 
     for minibatch in range(numbatches):
         print minibatch * batchsize
@@ -187,44 +207,23 @@ def compute_fromfile(net, loc, base_path='/ais/gobi3/u/rkiros/coco/images/val201
         batch = [imagelist[i] for i in idx]
         ims = numpy.zeros((len(idx), 3, 224, 224), dtype='float32')
         for j in range(len(idx)):
-            ims[j] = load_image(batch[j])
+            ims[j] = load_abstract_image(batch[j])
         fc7 = compute_features(net, ims)
-        feats[idx] = fc7
+
+        for j in xrange(len(idx)):
+            feat_im = fc7[j, :]
+            feat_im /= norm(feat_im)
+            # get the index from filename
+            index = batch[j].split('_')[-1]
+            index = index.lstrip('0')
+            index = index.split('.')[0]
+            if index == '':
+                index = 0
+            else:
+                index = int(index)
+            feats[index] = feat_im
 
     return feats
-
-def load_image(file_name):
-    """
-    Load and preprocess an image
-    """
-    MEAN_VALUE = numpy.array([103.939, 116.779, 123.68]).reshape((3,1,1))
-    image = Image.open(file_name)
-    im = numpy.array(image)
-
-    # Resize so smallest dim = 256, preserving aspect ratio
-    if len(im.shape) == 2:
-        im = im[:, :, numpy.newaxis]
-        im = numpy.repeat(im, 3, axis=2)
-    h, w, _ = im.shape
-    if h < w:
-        im = skimage.transform.resize(im, (256, w*256/h), preserve_range=True)
-    else:
-        im = skimage.transform.resize(im, (h*256/w, 256), preserve_range=True)
-
-    # Central crop to 224x224
-    h, w, _ = im.shape
-    im = im[h//2-112:h//2+112, w//2-112:w//2+112]
-
-    rawim = numpy.copy(im).astype('uint8')
-
-    # Shuffle axes to c01
-    im = numpy.swapaxes(numpy.swapaxes(im, 1, 2), 0, 1)
-
-    # Convert to BGR
-    im = im[::-1, :, :]
-
-    im = im - MEAN_VALUE
-    return floatX(im[numpy.newaxis])
 
 def compute_features(net, im):
     """
