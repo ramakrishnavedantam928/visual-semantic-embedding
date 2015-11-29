@@ -2,6 +2,7 @@
 Dataset loading
 """
 import numpy
+import h5py
 
 #-----------------------------------------------------------------------------#
 # Specify dataset(s) location here
@@ -9,10 +10,18 @@ import numpy
 path_to_data = 'datasets/'
 #-----------------------------------------------------------------------------#
 
-def load_dataset(name='f8k', load_train=True):
+def load_dataset(name='abstract-fc7', load_train=True):
     """
     Load captions and image features
     Possible options: f8k, f30k, coco, 'abstract-fc7', 'abstract-presence'
+
+    :params: name (str): name of the dataset to use in datasets/ folder
+    :params: load_train (bool): flag to indicate if training set is to be loaded
+
+    :returns: list of tuples :
+        {dataset}_caps (list of str): captions provided in the dataset
+        {dataset}_ims (np.ndarray): shape (n x c x h x w): numpy array
+        with preprocessed images
     """
     loc = path_to_data + name + '/'
 
@@ -31,13 +40,16 @@ def load_dataset(name='f8k', load_train=True):
         for line in f:
             test_caps.append(line.strip())
 
-    # Image features
+    # Done: Load Images Instead of Image Features
     if load_train:
-        train_ims = numpy.load(loc+name+'_train_ims.npy')
+        train_ims = h5py.File(open("""/ssd_local/rama/datasets/abstract-hdf5/
+                                   {}.h5""".format('train'), 'r'))
     else:
         train_ims = None
-    dev_ims = numpy.load(loc+name+'_dev_ims.npy')
-    test_ims = numpy.load(loc+name+'_test_ims.npy')
+    dev_ims = h5py.File(open("""/ssd_local/rama/datasets/abstract-hdf5/
+                                   {}.h5""".format('dev'), 'r'))
+    test_ims = h5py.File(open("""/ssd_local/rama/datasets/abstract-hdf5/
+                                   {}.h5""".format('test'), 'r'))
 
     return (train_caps, train_ims), (dev_caps, dev_ims), (test_caps, test_ims)
 

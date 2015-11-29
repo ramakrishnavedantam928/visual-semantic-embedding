@@ -27,6 +27,7 @@ def init_params(options):
                                                   nin=options['dim_word'], dim=options['dim'])
 
     # Image encoder
+    # TODO: Change this call for image fintetuning
     params = get_layer('ff')[0](options, params, prefix='ff_image', nin=options['dim_image'], nout=options['dim'])
 
     return params
@@ -50,7 +51,7 @@ def contrastive_loss(margin, im, s):
 
     return cost_s.sum() + cost_im.sum()
 
-def build_model(tparams, options):                                                                                           
+def build_model(tparams, options):
     """
     Computation graph for the model
     """
@@ -60,7 +61,9 @@ def build_model(tparams, options):
     # description string: #words x #samples
     x = tensor.matrix('x', dtype='int64')
     mask = tensor.matrix('mask', dtype='float32')
-    im = tensor.matrix('im', dtype='float32')
+
+    # TODO: make this a 4D matrix since images will be input
+    im = tensor.tensor4('im', dtype='float32')
 
     n_timesteps = x.shape[0]
     n_samples = x.shape[1]
@@ -78,8 +81,13 @@ def build_model(tparams, options):
         sents = proj[0][-1]
     sents = l2norm(sents)
 
-    # Encode images (source)
-    images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
+    # TODO: Encode images (source)
+    # Update the expression below based on implementation
+    # in layers / convff
+    # pass the image through the CNN
+    im_feat = get_layer('convff')[1](options, im)
+    # pass features through image embedding
+    images = get_layer('ff')[1](tparams, im_feat, options, prefix='ff_image', activ='linear')
 
     # Compute loss
     cost = contrastive_loss(options['margin'], images, sents)
@@ -125,12 +133,14 @@ def build_image_encoder(tparams, options):
     trng = RandomStreams(1234)
 
     # image features
+    # TODO: make the same change you made above in build model
     im = tensor.matrix('im', dtype='float32')
 
     # Encode images
+    # TODO: Make the same change you made above in build model
     images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
     images = l2norm(images)
-    
+
     return trng, [im], images
 
 

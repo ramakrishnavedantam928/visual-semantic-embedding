@@ -233,9 +233,10 @@ def compute_features(net, im):
     fc7 = numpy.array(lasagne.layers.get_output(net['fc7'], im, deterministic=True).eval())
     return fc7
 
-def build_convnet():
+def build_convnet(path_to_vgg='models/vgg19.pkl'):
     """
     Construct VGG-19 convnet
+    :param: path_to_vgg (str) : specifies the path to vgg model weights
     """
     print 'Building model...'
     net = {}

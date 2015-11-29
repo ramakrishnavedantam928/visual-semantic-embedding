@@ -25,7 +25,7 @@ def unzip(zipped):
 
 def itemlist(tparams):
     """
-    Get the list of parameters. 
+    Get the list of parameters.
     Note that tparams must be OrderedDict
     """
     return [vv for kk, vv in tparams.iteritems()]
@@ -45,12 +45,15 @@ def init_tparams(params):
         tparams[kk] = theano.shared(params[kk], name=kk)
     return tparams
 
+# TODO: Add path to CNN parameters here, and combine this function
+# with the build_convnet function in demo.py
 def load_params(path, params):
     """
     Load parameters
     """
     pp = numpy.load(path)
     for kk, vv in params.iteritems():
+        # TODO: Make a change here perhaps?
         if kk not in pp:
             warnings.warn('%s is not in the archive'%kk)
             continue

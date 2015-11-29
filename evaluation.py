@@ -6,6 +6,7 @@ import numpy
 from datasets import load_dataset
 from tools import encode_sentences, encode_images
 
+# TODO: Make sure all function signatures are consisten
 def evalrank(model, data, split='dev'):
     """
     Evaluate a trained model on either dev or test

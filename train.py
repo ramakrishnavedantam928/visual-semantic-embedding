@@ -76,6 +76,8 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
 
     # Load training and development sets
     print 'Loading dataset'
+    # NOTE: New image features would be num_images x num_channels x h x w
+    # TODO: make change in datasets / load_dataset function
     train, dev = load_dataset(data)[:2]
 
     # Create and save dictionary
@@ -95,13 +97,24 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     word_idict[1] = 'UNK'
 
     print 'Building model'
+    # TODO: Make change in model / init_params L 30
+    # TODO: No change required in get_layer in layers.py
+    # TODO: Add param_init_convolution function in layers.py
+    # provide an option in init params to load pretrained values
+    # or use random initialization
     params = init_params(model_options)
     # reload parameters
     if reload_ and os.path.exists(saveto):
+        # TODO: Make changes to utils / load_params
+        # TODO: Combine load_params with demo / build_convnet
+        # TODO: Change function signature below
         params = load_params(saveto, params)
 
     tparams = init_tparams(params)
 
+    # TODO: Make changes to model / build_model
+    # Lines 65, 88
+    # No idea what this trng does
     trng, inps, cost = build_model(tparams, model_options)
 
     # before any regularizer
@@ -128,6 +141,8 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     f_senc = theano.function(inps_se, sentences, profile=False)
 
     print 'Building image encoder'
+    # TODO: Make changes to model / build_image_encoder
+    # Line 136, L 140
     trng, inps_ie, images = build_image_encoder(tparams, model_options)
     f_ienc = theano.function(inps_ie, images, profile=False)
 
@@ -155,6 +170,8 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     print 'Optimization'
 
     # Each sentence in the minibatch have same length (for encoder)
+    # TODO: Make changes to homogeneous_data / __init__ and homogeneous_data /
+    # next
     train_iter = homogeneous_data.HomogeneousData([train[0], train[1]], batch_size=batch_size, maxlen=maxlen_w)
 
     uidx = 0
@@ -168,7 +185,7 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
         for x, im in train_iter:
             n_samples += len(x)
             uidx += 1
-
+            # TODO: Make changes to homogeneous_data / prepare_data L 75
             x, mask, im = homogeneous_data.prepare_data(x, im, worddict, maxlen=maxlen_w, n_words=n_words)
 
             if x == None:
@@ -214,6 +231,8 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
                     # Save model
                     print 'Saving...',
                     params = unzip(tparams)
+                    # TODO: Might want to merge models like this, makes a lot of
+                    # sense
                     numpy.savez(saveto, **params)
                     pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
                     print 'Done'

@@ -3,6 +3,7 @@ Layers for multimodal-ranking
 """
 import theano
 import theano.tensor as tensor
+import demo
 
 import numpy
 
@@ -11,6 +12,7 @@ from utils import _p, ortho_weight, norm_weight, xavier_weight, tanh, linear
 # layers: 'name': ('parameter initializer', 'feedforward')
 layers = {'ff': ('param_init_fflayer', 'fflayer'),
           'gru': ('param_init_gru', 'gru_layer'),
+          'convff': ('param_init_convff', 'convff_layer'),
           }
 
 def get_layer(name):
@@ -29,6 +31,7 @@ def param_init_fflayer(options, params, prefix='ff', nin=None, nout=None, ortho=
         nin = options['dim_proj']
     if nout == None:
         nout = options['dim_proj']
+
     params[_p(prefix,'W')] = xavier_weight(nin, nout)
     params[_p(prefix,'b')] = numpy.zeros((nout,)).astype('float32')
 
@@ -39,6 +42,14 @@ def fflayer(tparams, state_below, options, prefix='rconv', activ='lambda x: tens
     Feedforward pass
     """
     return eval(activ)(tensor.dot(state_below, tparams[_p(prefix,'W')])+tparams[_p(prefix,'b')])
+
+def param_init_convff():#TODO: Add arguments to function
+    pass
+
+# convolutional layers as part of model definition
+def convff_layer(options, prefix='conv'):
+    net = demo.build_convnet()
+    out = net['fc7'].
 
 # GRU layer
 def param_init_gru(options, params, prefix='gru', nin=None, dim=None):
