@@ -42,14 +42,11 @@ def load_dataset(name='abstract-fc7', load_train=True):
 
     # Done: Load Images Instead of Image Features
     if load_train:
-        train_ims = h5py.File(open("""/ssd_local/rama/datasets/abstract-hdf5/
-                                   {}.h5""".format('train'), 'r'))
+        train_ims = h5py.File(open('/ssd_local/rama/datasets/abstract-hdf5/{}.h5'.format('train'), 'r'))
     else:
         train_ims = None
-    dev_ims = h5py.File(open("""/ssd_local/rama/datasets/abstract-hdf5/
-                                   {}.h5""".format('dev'), 'r'))
-    test_ims = h5py.File(open("""/ssd_local/rama/datasets/abstract-hdf5/
-                                   {}.h5""".format('test'), 'r'))
+    dev_ims = h5py.File(open('/ssd_local/rama/datasets/abstract-hdf5/{}.h5'.format('dev'), 'r'))
+    test_ims = h5py.File(open('/ssd_local/rama/datasets/abstract-hdf5/{}.h5'.format('test'), 'r'))
 
     return (train_caps, train_ims), (dev_caps, dev_ims), (test_caps, test_ims)
 
