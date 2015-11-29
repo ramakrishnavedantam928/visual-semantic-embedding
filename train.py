@@ -100,17 +100,19 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     word_idict[1] = 'UNK'
 
     print 'Building model'
-    # TODO: Make change in model / init_params L 30
-    # TODO: No change required in get_layer in layers.py
-    # TODO: Add param_init_convolution function in layers.py
+    # NOT DOING: Make change in model / init_params L 30
+    # NOT DOING: No change required in get_layer in layers.py
+    # NOT DOING: Add param_init_convolution function in layers.py
     # provide an option in init params to load pretrained values
     # or use random initialization
+
+    # all params except for CNN params initialized
     params = init_params(model_options)
     # reload parameters
     if reload_ and os.path.exists(saveto):
-        # TODO: Make changes to utils / load_params
-        # TODO: Combine load_params with demo / build_convnet
-        # TODO: Change function signature below
+        # NOT DOING: Make changes to utils / load_params
+        # NOT DOING: Combine load_params with demo / build_convnet
+        # NOT DOING: Change function signature below
         params = load_params(saveto, params)
 
     tparams = init_tparams(params)
@@ -118,7 +120,9 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     # TODO: Make changes to model / build_model
     # Lines 65, 88
     # No idea what this trng does
-    trng, inps, cost = build_model(tparams, model_options)
+    # change build model function so that it also changes /
+    # adds the cnn parameters to tparams
+    trng, inps, cost, tparams = build_model(tparams, model_options)
 
     # before any regularizer
     print 'Building f_log_probs...',

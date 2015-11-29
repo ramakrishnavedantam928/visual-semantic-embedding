@@ -11,7 +11,6 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from utils import _p, ortho_weight, norm_weight, xavier_weight, tanh, l2norm
 from layers import get_layer, param_init_fflayer, fflayer, param_init_gru, gru_layer
-from cnn import build_convnet
 
 def init_params(options):
     """
@@ -27,11 +26,11 @@ def init_params(options):
         params = get_layer(options['encoder'])[0](options, params, prefix='encoder',
                                                   nin=options['dim_word'], dim=options['dim'])
 
-    # Image encoder
-    # TODO: Change this call for image fintetuning
+    # Change this call for image fintetuning
     params = get_layer('ff')[0](options, params, prefix='ff_image', nin=options['dim_image'], nout=options['dim'])
     # Parameters for the CNN are initialized automatically by lasagne
     # So just get the trainable parameters here
+    # Cant get those without network definition, so skip cnn parameters here.
 
     return params
 
@@ -65,7 +64,7 @@ def build_model(tparams, options):
     x = tensor.matrix('x', dtype='int64')
     mask = tensor.matrix('mask', dtype='float32')
 
-    # TODO: make this a 4D matrix since images will be input
+    # make this a 4D matrix since images will be input
     im = tensor.tensor4('im', dtype='float32')
 
     n_timesteps = x.shape[0]
@@ -88,14 +87,14 @@ def build_model(tparams, options):
     # Update the expression below based on implementation
     # in layers / convff
     # pass the image through the CNN
-    im_feat = get_layer('convff')[1](options, im)
+    im_feat, tparams = get_layer('cnn')[0](tparams, options, im, test=False)
     # pass features through image embedding
     images = get_layer('ff')[1](tparams, im_feat, options, prefix='ff_image', activ='linear')
 
     # Compute loss
     cost = contrastive_loss(options['margin'], images, sents)
 
-    return trng, [x, mask, im], cost
+    return trng, [x, mask, im], cost, tparams
 
 def build_sentence_encoder(tparams, options):
     """
