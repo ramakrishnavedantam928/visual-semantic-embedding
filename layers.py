@@ -22,6 +22,7 @@ def get_layer(name):
     """
     fns = layers[name]
     if name == 'cnn':
+        print fns[0]
         return (eval(fns[0]))
     else:
         return (eval(fns[0]), eval(fns[1]))
