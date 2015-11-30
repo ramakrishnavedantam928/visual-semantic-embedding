@@ -49,12 +49,11 @@ def build_convnet(network='vgg19', load_param=True):
         net['fc7'] = DenseLayer(net['fc6'], num_units=4096)
         net['fc8'] = DenseLayer(net['fc7'], num_units=1000, nonlinearity=None)
         net['prob'] = NonlinearityLayer(net['fc8'], softmax)
-        if load_param:
-            path_to_vgg = 'models/vgg19.pkl'
-            print 'Loading parameters...'
-            output_layer = net['prob']
-            model = pkl.load(open(path_to_vgg))
-            lasagne.layers.set_all_param_values(output_layer, model['param values'])
+        path_to_vgg = 'models/vgg19.pkl'
+        print 'Loading VGG parameters...'
+        output_layer = net['prob']
+        model = pkl.load(open(path_to_vgg))
+        lasagne.layers.set_all_param_values(output_layer, model['param values'])
     else:
         print "Network design not specified, specify in cnn.py"
         pass

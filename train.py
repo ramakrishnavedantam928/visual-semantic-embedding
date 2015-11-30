@@ -13,6 +13,7 @@ import warnings
 import sys
 import time
 import argparse
+import lasagne
 
 import homogeneous_data
 
@@ -70,12 +71,6 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     model_options['cnn'] = cnn
 
     print model_options
-
-    # reload options
-    if reload_ and os.path.exists(saveto):
-        print 'reloading...' + saveto
-        with open('%s.pkl'%saveto, 'rb') as f:
-            models_options = pkl.load(f)
 
     # Load training and development sets
     print 'Loading dataset'
@@ -183,6 +178,7 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     # TODO: Make changes to homogeneous_data / __init__ and homogeneous_data /
     # next
     train_iter = homogeneous_data.HomogeneousData([train[0], train[1]], batch_size=batch_size, maxlen=maxlen_w)
+    dev_iter = homogeneous_data.HomogeneousData([dev[0], dev[1]], batch_size=batch_size, maxlen=maxlen_w)
 
     uidx = 0
     curr = 0.
@@ -204,8 +200,15 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
                 continue
 
             # Update
+            import pdb
+            pdb.set_trace()
             ud_start = time.time()
+            prev = tparams[ff_W].get_value()
             cost = f_grad_shared(x, mask, im)
+            new = tparams[ff_W].get_value()
+            db.set_trace()
+            print ((new-prev) ** 2).sum()
+
             f_update(lrate)
             ud = time.time() - ud_start
 
@@ -226,15 +229,22 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
                 curr_model['f_senc'] = f_senc
                 curr_model['f_ienc'] = f_ienc
 
-                ls = encode_sentences(curr_model, dev[0])
-                lim = encode_images(curr_model, dev[1])
+                currscore = 0
+                # need to batch this up neatly
+                for x_dev, im_dev in dev_iter:
+                    import pdb
+                    pdb.set_trace()
+                    _, _, im_dev = homogeneous_data.prepare_data(x_dev,
+                            im_dev, worddict, maxlen=maxlen_w, n_words=n_words)
+                    ls = encode_sentences(curr_model, x_dev)
+                    lim = encode_images(curr_model, im_dev)
 
-                (r1, r5, r10, medr) = i2t(lim, ls)
-                print "Image to text: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
-                (r1i, r5i, r10i, medri) = t2i(lim, ls)
-                print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri)
+                    (r1, r5, r10, medr) = i2t(lim, ls)
+                    print "Image to text: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
+                    (r1i, r5i, r10i, medri) = t2i(lim, ls)
+                    print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri)
 
-                currscore = r1 + r5 + r10 + r1i + r5i + r10i
+                    currscore += r1 + r5 + r10 + r1i + r5i + r10i
                 if currscore > curr:
                     curr = currscore
 
@@ -255,7 +265,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Training code for visual semantic embedding models')
     parser.add_argument('--data', default='abstract-fc7-mean', help='Which kind of features from ./datasets do you want to use?')
     parser.add_argument('--im_dim', type=int, default=4096, help='Dimensionality of image features')
-
+    parser.add_argument('--reload', type=bool, default=False, help='Load parameters?')
     args = parser.parse_args()
 
     model = os.path.join('vse', args.data + '.npz')

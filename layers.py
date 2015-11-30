@@ -22,8 +22,7 @@ def get_layer(name):
     """
     fns = layers[name]
     if name == 'cnn':
-        print fns[0]
-        return (eval(fns[0]))
+        return (eval('cnn_layer'))
     else:
         return (eval(fns[0]), eval(fns[1]))
 
@@ -48,6 +47,9 @@ def fflayer(tparams, state_below, options, prefix='rconv', activ='lambda x: tens
     """
     return eval(activ)(tensor.dot(state_below, tparams[_p(prefix,'W')])+tparams[_p(prefix,'b')])
 
+def param_init_cnn():
+    pass
+
 # convolutional layers as part of model definition
 def cnn_layer(options, image, test=False):
     """
@@ -60,7 +62,7 @@ def cnn_layer(options, image, test=False):
     :returns: theano.tensor: computes the symbolic expression for the cnn output
     """
     # TODO: Handle *where* the reload file exists
-    net =  build_convnet(options['cnn'], options['reload_'])
+    net =  build_convnet(options['cnn'])
     # get network parameters
     if not test:
         cnn_params = lasagne.layers.get_all_params(net['fc7'], trainable=True)
@@ -69,7 +71,7 @@ def cnn_layer(options, image, test=False):
     else:
         cnn_params = None
         cnn_regs = None
-    return lasagne.layers.get_layer_output(net['fc7'], image, deterministic=test),\
+    return lasagne.layers.get_output(net['fc7'], image, deterministic=test),\
         cnn_params, cnn_regs
 
 # GRU layer
