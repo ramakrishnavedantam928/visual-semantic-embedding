@@ -5,22 +5,24 @@
 # Sun Nov 29 09:53:40 EST 2015
 
 import lasagne
+import cPickle as pkl
 from lasagne.layers import InputLayer, DenseLayer, NonlinearityLayer
 from lasagne.layers.corrmm import Conv2DMMLayer as ConvLayer
 from lasagne.layers import MaxPool2DLayer as PoolLayer
 from lasagne.nonlinearities import softmax
 from lasagne.utils import floatX
+from lasagne.init import Glorot, Constant
 
-def build_convnet(option='vgg19'):
+def build_convnet(network='vgg19', load_param=True):
     """
     Specify the convnet architecture to use
     :params: option (str): name of the network to create
     :returns: net (dict()): lasagne network without weight initialization
     """
 
-    print 'Building model %s ...' % (option)
+    print 'Building model %s ...' % (network)
     net = {}
-    if option == 'vgg19':
+    if network == 'vgg19':
         net['input'] = InputLayer((None, 3, 224, 224))
         net['conv1_1'] = ConvLayer(net['input'], 64, 3, pad=1)
         net['conv1_2'] = ConvLayer(net['conv1_1'], 64, 3, pad=1)
@@ -47,6 +49,12 @@ def build_convnet(option='vgg19'):
         net['fc7'] = DenseLayer(net['fc6'], num_units=4096)
         net['fc8'] = DenseLayer(net['fc7'], num_units=1000, nonlinearity=None)
         net['prob'] = NonlinearityLayer(net['fc8'], softmax)
+        if load_param:
+            path_to_vgg = 'models/vgg19.pkl'
+            print 'Loading parameters...'
+            output_layer = net['prob']
+            model = pkl.load(open(path_to_vgg))
+            lasagne.layers.set_all_param_values(output_layer, model['param values'])
     else:
         print "Network design not specified, specify in cnn.py"
         pass

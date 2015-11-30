@@ -71,7 +71,8 @@ def build_model(tparams, options):
     n_samples = x.shape[1]
 
     # Word embedding (source)
-    emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps, n_samples, options['dim_word']])
+    emb = tparams['Wemb'][x.flatten()].reshape([n_timesteps, n_samples,
+                                                options['dim_word']])
 
     # Encode sentences (source)
     if options['encoder'] == 'bow':
@@ -87,14 +88,16 @@ def build_model(tparams, options):
     # Update the expression below based on implementation
     # in layers / convff
     # pass the image through the CNN
-    im_feat, tparams = get_layer('cnn')[0](tparams, options, im, test=False)
+    im_feat, cnn_tparams, cnn_rparams = get_layer('cnn')[0](options, im,
+                                                            test=False)
     # pass features through image embedding
-    images = get_layer('ff')[1](tparams, im_feat, options, prefix='ff_image', activ='linear')
+    images = get_layer('ff')[1](tparams, im_feat, options, prefix='ff_image',
+                                activ='linear')
 
     # Compute loss
     cost = contrastive_loss(options['margin'], images, sents)
 
-    return trng, [x, mask, im], cost, tparams
+    return trng, [x, mask, im], cost, cnn_tparams
 
 def build_sentence_encoder(tparams, options):
     """
@@ -136,11 +139,16 @@ def build_image_encoder(tparams, options):
 
     # image features
     # TODO: make the same change you made above in build model
-    im = tensor.matrix('im', dtype='float32')
+    im = tensor.tensor4('im', dtype='float32')
 
     # Encode images
-    # TODO: Make the same change you made above in build model
-    images = get_layer('ff')[1](tparams, im, options, prefix='ff_image', activ='linear')
+    im_feat, cnn_tparams, cnn_rparams = get_layer('cnn')[0](options, im,
+                                                            test=True)
+    # pass features through image embedding
+    images = get_layer('ff')[1](tparams, im_feat, options, prefix='ff_image',
+                                activ='linear')
+
+   # TODO: Make the same change you made above in build model
     images = l2norm(images)
 
     return trng, [im], images

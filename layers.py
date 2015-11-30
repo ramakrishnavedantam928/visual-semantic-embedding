@@ -3,7 +3,6 @@ Layers for multimodal-ranking
 """
 import theano
 import theano.tensor as tensor
-import demo
 import lasagne
 
 import numpy
@@ -14,7 +13,7 @@ from cnn import build_convnet
 # layers: 'name': ('parameter initializer', 'feedforward')
 layers = {'ff': ('param_init_fflayer', 'fflayer'),
           'gru': ('param_init_gru', 'gru_layer'),
-          'cnn': ('cnn_layer'),
+          'cnn': ('cnn_layer')
           }
 
 def get_layer(name):
@@ -46,7 +45,7 @@ def fflayer(tparams, state_below, options, prefix='rconv', activ='lambda x: tens
     return eval(activ)(tensor.dot(state_below, tparams[_p(prefix,'W')])+tparams[_p(prefix,'b')])
 
 # convolutional layers as part of model definition
-def cnn_layer(tparams, options, image, test=False):
+def cnn_layer(options, image, test=False):
     """
     Declare a CNN function and return a function for it
 
@@ -59,14 +58,15 @@ def cnn_layer(tparams, options, image, test=False):
     # TODO: Handle *where* the reload file exists
     net =  build_convnet(options['cnn'], options['reload_'])
     # get network parameters
-
-    for name, layer in net.iteritems():
-        params = lasagne.layers.get_all_params(layer, trainable=True)
-        if len(params) != 0:
-        tparams[name] =
-
-
-    return lasagne.layers.get_layer_output(net['fc7'], image, deterministic=test),
+    if not test:
+        cnn_params = lasagne.layers.get_all_params(net['fc7'], trainable=True)
+        cnn_regs = lasagne.layers.get_all_params(net['fc7'], trainable=True,
+                                                regularizable=True)
+    else:
+        cnn_params = None
+        cnn_regs = None
+    return lasagne.layers.get_layer_output(net['fc7'], image, deterministic=test),\
+        cnn_params, cnn_regs
 
 # GRU layer
 def param_init_gru(options, params, prefix='gru', nin=None, dim=None):

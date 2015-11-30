@@ -15,8 +15,8 @@ class HomogeneousData():
 
     def prepare(self):
         self.caps = self.data[0]
-        # TODO: Name this as Images more appropriate
-        self.feats = self.data[1]
+        # DONE: Name this as Images more appropriate
+        self.images = self.data[1]
 
         # find the unique lengths
         self.lengths = [len(cc.split()) for cc in self.caps]
@@ -66,53 +66,55 @@ class HomogeneousData():
         self.len_curr_counts[self.len_unique[self.len_idx]] -= curr_batch_size
 
         caps = [self.caps[ii] for ii in curr_indices]
-        # TODO: Name feats as Images
-        feats = [self.feats[ii] for ii in curr_indices]
+        # DONE: Name feats as Images
+        images = [self.images[ii] for ii in curr_indices]
 
-        # TODO: Name feats as Images
-        return caps, feats
+        # DONE: Name feats as Images
+        return caps, images
 
     def __iter__(self):
         return self
 
 # TODO: Change features to images below
-def prepare_data(caps, features, worddict, maxlen=None, n_words=10000):
+def prepare_data(caps, images, worddict, maxlen=None, n_words=10000):
     """
     Put data into format useable by the model
     """
     seqs = []
     # TODO: change feat_list to image_list
-    feat_list = []
+    image_list = []
     for i, cc in enumerate(caps):
         seqs.append([worddict[w] if worddict[w] < n_words else 1 for w in cc.split()])
         # TODO:  Change features to images below
-        feat_list.append(features[i])
+        image_list.append(images[i])
 
     lengths = [len(s) for s in seqs]
 
     if maxlen != None and numpy.max(lengths) >= maxlen:
         new_seqs = []
         # TODO: Rename to new_image_list
-        new_feat_list = []
+        new_ew_image_list = []
         new_lengths = []
         # TODO: Rename to image_list below
-        for l, s, y in zip(lengths, seqs, feat_list):
+        for l, s, y in zip(lengths, seqs, image_list):
             if l < maxlen:
                 new_seqs.append(s)
                 # TODO: Rename to new_image_list
-                new_feat_list.append(y)
+                new_image_list.append(y)
                 new_lengths.append(l)
         lengths = new_lengths
         # TODO: Rename to new_image_list and image_list
-        feat_list = new_feat_list
+        image_list = new_image_list
         seqs = new_seqs
 
         if len(lengths) < 1:
             return None, None, None
 
     # TODO: Rename to image_list, and change dimensions of y to n x c x h x w
-    y = numpy.zeros((len(feat_list), len(feat_list[0]))).astype('float32')
-    for idx, ff in enumerate(feat_list):
+    y = numpy.zeros((len(image_list), image_list[0].shape[0],
+                     image_list[0].shape[1],
+                     image_list[0].shape[2])).astype('float32')
+    for idx, ff in enumerate(image_list):
         y[idx,:] = ff
 
     n_samples = len(seqs)

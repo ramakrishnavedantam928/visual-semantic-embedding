@@ -117,12 +117,10 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
 
     tparams = init_tparams(params)
 
-    # TODO: Make changes to model / build_model
+    # DONE: Make changes to model / build_model
     # Lines 65, 88
-    # No idea what this trng does
-    # change build model function so that it also changes /
-    # adds the cnn parameters to tparams
-    trng, inps, cost, tparams = build_model(tparams, model_options)
+    # TODO: check
+    trng, inps, cost, cnn_tparams = build_model(tparams, model_options)
 
     # before any regularizer
     print 'Building f_log_probs...',
@@ -135,6 +133,9 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
         weight_decay = 0.
         for kk, vv in tparams.iteritems():
             weight_decay += (vv ** 2).sum()
+        # cnn parameter weight decay
+        for item in cnn_tparams:
+            weight_decay += (item.get_value() ** 2).sum()
         weight_decay *= decay_c
         cost += weight_decay
 
@@ -155,9 +156,11 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
 
     print 'Building f_grad...',
     grads = tensor.grad(cost, wrt=itemlist(tparams))
+    update_cnn = lasagne.updates.adam(cost, cnn_tparams, lrate, 0.1, 0.001, 1e-8).items()
     f_grad_norm = theano.function(inps, [(g**2).sum() for g in grads], profile=False)
     f_weight_norm = theano.function([], [(t**2).sum() for k,t in tparams.iteritems()], profile=False)
 
+    # not add the parameters here
     if grad_clip > 0.:
         g2 = 0.
         for g in grads:
@@ -192,7 +195,7 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
         for x, im in train_iter:
             n_samples += len(x)
             uidx += 1
-            # TODO: Make changes to homogeneous_data / prepare_data L 75
+            # DONE: Make changes to homogeneous_data / prepare_data L 75
             x, mask, im = homogeneous_data.prepare_data(x, im, worddict, maxlen=maxlen_w, n_words=n_words)
 
             if x == None:
@@ -238,6 +241,8 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
                     # Save model
                     print 'Saving...',
                     params = unzip(tparams)
+                    # TODO: Need to add saving of VGG model / updation
+                    # See if this works, and then decide what to do
                     # TODO: Might want to merge models like this, makes a lot of
                     # sense
                     numpy.savez(saveto, **params)
@@ -248,7 +253,7 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Training code for visual semantic embedding models')
-    parser.add_argument('--data', default='abstract-fc7', help='Which kind of features from ./datasets do you want to use?')
+    parser.add_argument('--data', default='abstract-fc7-mean', help='Which kind of features from ./datasets do you want to use?')
     parser.add_argument('--im_dim', type=int, default=4096, help='Dimensionality of image features')
 
     args = parser.parse_args()

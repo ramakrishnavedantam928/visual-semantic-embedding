@@ -6,11 +6,16 @@ import theano.tensor as tensor
 import numpy
 
 # name(hyperp, tparams, grads, inputs (list), cost) = f_grad_shared, f_update
-def adam(lr, tparams, grads, inp, cost):
+def adam(lr, tparams, grads, inp, cost, cnn_updates =None):
     gshared = [theano.shared(p.get_value() * 0., name='%s_grad'%k) for k, p in tparams.iteritems()]
     gsup = [(gs, g) for gs, g in zip(gshared, grads)]
 
-    f_grad_shared = theano.function(inp, cost, updates=gsup, profile=False)
+    if cnn_updates is not None:
+        f_grad_shared = theano.function(inp, cost, updates=gsup + cnn_updates
+                                        , profile=False)
+    else:
+        f_grad_shared = theano.function(inp, cost, updates=gsup, profile=False)
+
 
     b1 = 0.1
     b2 = 0.001
