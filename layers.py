@@ -21,7 +21,10 @@ def get_layer(name):
     Return param init and feedforward functions for the given layer name
     """
     fns = layers[name]
-    return (eval(fns[0]), eval(fns[1]))
+    if name == 'cnn':
+        return (eval(fns[0]))
+    else:
+        return (eval(fns[0]), eval(fns[1]))
 
 # Feedforward layer
 def param_init_fflayer(options, params, prefix='ff', nin=None, nout=None, ortho=True):

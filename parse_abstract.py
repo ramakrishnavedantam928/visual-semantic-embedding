@@ -101,7 +101,7 @@ def get_image_feat(feat_type, image_folder, orig_split, indices, real_split):
                 for j in xrange(5):
                     images[index * 5 + j] = abstract_im
 
-            with h5py.File('/ssd_local/rama/datasets/abstract-hdf5/{}.h5'.format(real_split), 'w') as outfile:
+            with h5py.File('/ssd_local/rama/datasets/abstract-mini-hdf5/{}.h5'.format(real_split), 'w') as outfile:
                 outfile['images'] = images
             return True
         except:
@@ -227,9 +227,9 @@ if __name__ == "__main__":
     splits = args.splits.split('-')
 
     # for testing - use just one element of splits
-    #all_splits['train_split'] = set([list(all_splits['train_split'])[0]])
-    #all_splits['dev_split'] = set([list(all_splits['dev_split'])[0]])
-    #all_splits['test_split'] = set([list(all_splits['test_split'])[0]])
+    all_splits['train_split'] = set(list(all_splits['train_split'])[:2000])
+    all_splits['dev_split'] = set(list(all_splits['dev_split'])[:2000])
+    all_splits['test_split'] = set(list(all_splits['test_split'])[:2000])
 
     if 'hdf5' in imfeat:
         for sp in splits:
