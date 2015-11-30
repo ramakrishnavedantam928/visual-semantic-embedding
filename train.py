@@ -208,10 +208,9 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
 
             # Update
             ud_start = time.time()
-            prev = cnn_tparams[10].get_value()[0,0]
+            # prev = cnn_tparams[10].get_value()[0,0]
             # prev = tparams['ff_image_W'].get_value()[0,0]
             cost = f_grad_shared(x, mask, im)
-            print prev
 
             f_update(lrate)
             ud = time.time() - ud_start
