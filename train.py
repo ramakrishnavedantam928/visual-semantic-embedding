@@ -33,6 +33,7 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
             margin=0.2,
             dim=1024,
             dim_image=4096,
+            cnnsaveto='vse/abstract-fc7_vgg.pkl',
             dim_word=300,
             encoder='gru',  # gru OR bow
             max_epochs=15,
@@ -104,18 +105,20 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     # all params except for CNN params initialized
     params = init_params(model_options)
     # reload parameters
+    print saveto, reload_
     if reload_ and os.path.exists(saveto):
         # NOT DOING: Make changes to utils / load_params
         # NOT DOING: Combine load_params with demo / build_convnet
         # NOT DOING: Change function signature below
         params = load_params(saveto, params)
+        print "Loaded VSE model parameters"
 
     tparams = init_tparams(params)
 
     # DONE: Make changes to model / build_model
     # Lines 65, 88
     # TODO: check
-    trng, inps, cost, cnn_tparams = build_model(tparams, model_options)
+    trng, inps, cost, cnn_tparams, cnn_out = build_model(tparams, model_options)
 
     # before any regularizer
     print 'Building f_log_probs...',
@@ -170,15 +173,18 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     lr = tensor.scalar(name='lr')
     print 'Building optimizers...',
     # (compute gradients), (updates parameters)
-    f_grad_shared, f_update = eval(optimizer)(lr, tparams, grads, inps, cost)
+    f_grad_shared, f_update = eval(optimizer)(lr, tparams, grads, inps, cost,
+                                              update_cnn)
 
     print 'Optimization'
 
     # Each sentence in the minibatch have same length (for encoder)
     # TODO: Make changes to homogeneous_data / __init__ and homogeneous_data /
     # next
-    train_iter = homogeneous_data.HomogeneousData([train[0], train[1]], batch_size=batch_size, maxlen=maxlen_w)
-    dev_iter = homogeneous_data.HomogeneousData([dev[0], dev[1]], batch_size=batch_size, maxlen=maxlen_w)
+    train_iter = homogeneous_data.HomogeneousData([train[0], train[1]],
+                                    batch_size=batch_size, maxlen=maxlen_w)
+    dev_iter = homogeneous_data.HomogeneousData([dev[0], dev[1]],
+                                    batch_size=batch_size, maxlen=maxlen_w)
 
     uidx = 0
     curr = 0.
@@ -200,14 +206,11 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
                 continue
 
             # Update
-            import pdb
-            pdb.set_trace()
             ud_start = time.time()
-            prev = tparams[ff_W].get_value()
+            prev = cnn_tparams[10].get_value()[0,0]
+            # prev = tparams['ff_image_W'].get_value()[0,0]
             cost = f_grad_shared(x, mask, im)
-            new = tparams[ff_W].get_value()
-            db.set_trace()
-            print ((new-prev) ** 2).sum()
+            print prev
 
             f_update(lrate)
             ud = time.time() - ud_start
@@ -231,11 +234,12 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
 
                 currscore = 0
                 # need to batch this up neatly
+                devit = 0
                 for x_dev, im_dev in dev_iter:
-                    import pdb
-                    pdb.set_trace()
                     _, _, im_dev = homogeneous_data.prepare_data(x_dev,
                             im_dev, worddict, maxlen=maxlen_w, n_words=n_words)
+                    if im_dev.shape[0]<5:
+                        continue
                     ls = encode_sentences(curr_model, x_dev)
                     lim = encode_images(curr_model, im_dev)
 
@@ -245,6 +249,10 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
                     print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri)
 
                     currscore += r1 + r5 + r10 + r1i + r5i + r10i
+                    devit += 1
+
+                currscore /= devit
+
                 if currscore > curr:
                     curr = currscore
 
@@ -256,6 +264,10 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
                     # TODO: Might want to merge models like this, makes a lot of
                     # sense
                     numpy.savez(saveto, **params)
+                    # cnn save to
+                    params = 1
+                    #params = lasagne.layers.get_all_param_values(convnet['fc7'])
+                    pkl.dump(params, open(cnnsaveto, 'w'))
                     pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
                     print 'Done'
 
@@ -269,5 +281,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     model = os.path.join('vse', args.data + '.npz')
-    trainer(data=args.data, dim_image=args.im_dim, saveto=model)
+    cnnsaveto = os.path.join('vse', args.data + '_vgg' + '.pkl')
+    trainer(data=args.data, dim_image=args.im_dim, saveto=model, cnnsaveto = cnnsaveto,
+            reload_=args.reload, lrate=0.000005)
     print "Done"
