@@ -69,7 +69,7 @@ def cnn_layer(options, image, test=False):
     else:
         cnn_params = None
     return lasagne.layers.get_output(net['fc7'], image, deterministic=test),\
-        cnn_params
+        cnn_params, net
 
 # GRU layer
 def param_init_gru(options, params, prefix='gru', nin=None, dim=None):

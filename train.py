@@ -118,7 +118,8 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     # DONE: Make changes to model / build_model
     # Lines 65, 88
     # TODO: check
-    trng, inps, cost, cnn_tparams, cnn_out = build_model(tparams, model_options)
+    trng, inps, cost, cnn_tparams, cnn_out, convnet = build_model(tparams,
+                                                                  model_options)
 
     # before any regularizer
     print 'Building f_log_probs...',
@@ -265,8 +266,7 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
                     # sense
                     numpy.savez(saveto, **params)
                     # cnn save to
-                    params = 1
-                    #params = lasagne.layers.get_all_param_values(convnet['fc7'])
+                    params = lasagne.layers.get_all_param_values(convnet['fc7'])
                     pkl.dump(params, open(cnnsaveto, 'w'))
                     pkl.dump(model_options, open('%s.pkl'%saveto, 'wb'))
                     print 'Done'

@@ -88,7 +88,7 @@ def build_model(tparams, options):
     # Update the expression below based on implementation
     # in layers / convff
     # pass the image through the CNN
-    im_feat, cnn_tparams = get_layer('cnn')(options, im,
+    im_feat, cnn_tparams, net = get_layer('cnn')(options, im,
                                                             test=False)
     # pass features through image embedding
     images = get_layer('ff')[1](tparams, im_feat, options, prefix='ff_image',
@@ -97,7 +97,7 @@ def build_model(tparams, options):
     # Compute loss
     cost = contrastive_loss(options['margin'], images, sents)
 
-    return trng, [x, mask, im], cost, cnn_tparams, im_feat
+    return trng, [x, mask, im], cost, cnn_tparams, im_feat, net
 
 def build_sentence_encoder(tparams, options):
     """
@@ -142,7 +142,7 @@ def build_image_encoder(tparams, options):
     im = tensor.tensor4('im', dtype='float32')
 
     # Encode images
-    im_feat, cnn_tparams = get_layer('cnn')(options, im,
+    im_feat, cnn_tparams, _ = get_layer('cnn')(options, im,
                                                             test=True)
     # pass features through image embedding
     images = get_layer('ff')[1](tparams, im_feat, options, prefix='ff_image',
