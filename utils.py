@@ -4,8 +4,32 @@ Helper functions for multimodal-ranking
 import theano
 import theano.tensor as tensor
 import numpy
+from tqdm import *
 
 from collections import OrderedDict
+
+
+def repeat(array, times):
+    _shape = list(array.shape)
+    _shape[0] *= times
+    new = numpy.zeros(tuple(_shape))
+
+    for index in tqdm(xrange(array.shape[0])):
+        for j in xrange(times):
+            new[index*times + j, :, :, :] = array[index, :, :, :]
+    return new
+
+def repeat_list(array, times):
+
+    new = []
+
+    for index in tqdm(xrange(array.shape[0])):
+        new.extend(list([array[index]])*times)
+
+    for index, _ in tqdm(enumerate(new)):
+        new[index] = numpy.array(new[index])
+
+    return new
 
 def zipp(params, tparams):
     """

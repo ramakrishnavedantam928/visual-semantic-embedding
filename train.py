@@ -42,7 +42,7 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
             grad_clip=2.,
             maxlen_w=100,
             optimizer='adam',
-            batch_size = 128,
+            batch_size = 64,
             saveto='vse/abstract-fc7.npz',
             validFreq=100,
             lrate=0.0002,
@@ -147,6 +147,7 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
     trng, inps_se, sentences = build_sentence_encoder(tparams, model_options)
     f_senc = theano.function(inps_se, sentences, profile=False)
 
+
     print 'Building image encoder'
     # TODO: Make changes to model / build_image_encoder
     # Line 136, L 140
@@ -232,26 +233,22 @@ def trainer(data='abstract-fc7',  #f8k, f30k, coco, abstract-fc7
                 curr_model['f_senc'] = f_senc
                 curr_model['f_ienc'] = f_ienc
 
-                currscore = 0
-                # need to batch this up neatly
-                devit = 0
+                ls = []
+                lim = []
                 for x_dev, im_dev in dev_iter:
                     _, _, im_dev = homogeneous_data.prepare_data(x_dev,
                             im_dev, worddict, maxlen=maxlen_w, n_words=n_words)
-                    if im_dev.shape[0]<5:
-                        continue
-                    ls = encode_sentences(curr_model, x_dev)
-                    lim = encode_images(curr_model, im_dev)
+                    ls.extend(list(encode_sentences(curr_model, x_dev)))
+                    lim.extend(list(encode_images(curr_model, im_dev)))
 
-                    (r1, r5, r10, medr) = i2t(lim, ls)
-                    print "Image to text: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
-                    (r1i, r5i, r10i, medri) = t2i(lim, ls)
-                    print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri)
+                ls = numpy.array(ls)
+                lim = numpy.array(lim)
+                (r1, r5, r10, medr) = i2t(lim, ls)
+                print "Image to text: %.1f, %.1f, %.1f, %.1f" % (r1, r5, r10, medr)
+                (r1i, r5i, r10i, medri) = t2i(lim, ls)
+                print "Text to image: %.1f, %.1f, %.1f, %.1f" % (r1i, r5i, r10i, medri)
 
-                    currscore += r1 + r5 + r10 + r1i + r5i + r10i
-                    devit += 1
-
-                currscore /= devit
+                currscore = r1 + r5 + r10 + r1i + r5i + r10i
 
                 if currscore > curr:
                     curr = currscore
@@ -279,8 +276,8 @@ if __name__ == '__main__':
     parser.add_argument('--reload', type=bool, default=False, help='Load parameters?')
     args = parser.parse_args()
 
-    model = os.path.join('vse', args.data + '.npz')
-    cnnsaveto = os.path.join('vse', args.data + '_vgg' + '.pkl')
+    model = os.path.join('vse-ft', args.data + '.npz')
+    cnnsaveto = os.path.join('vse-ft', args.data + '_vgg' + '.pkl')
     trainer(data=args.data, dim_image=args.im_dim, saveto=model, cnnsaveto = cnnsaveto,
             reload_=args.reload, lrate=0.000005)
     print "Done"
